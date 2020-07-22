@@ -1,12 +1,12 @@
 import java.sql.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-// state: created --> checked --> confirmed --> payed --> sent --> finished
+// state: created --> checked --> confirmed --> paid --> sent --> finished
 enum OrderState {
     CREATED,
     CHECKING,
     CONFIRMED,
-    PAYED,
+    PAID,
     FINISHED,
 }
 
@@ -62,7 +62,7 @@ public class ProcessSimulator {
             case CREATED: stateValue = "created"; break;
             case CHECKING: stateValue = "checking"; break;
             case CONFIRMED: stateValue = "confirmed"; break;
-            case PAYED: stateValue = "payed"; break;
+            case PAID: stateValue = "paid"; break;
             case FINISHED: stateValue = "finished"; break;
         }
         if (stateValue.equals("")) {
@@ -192,7 +192,7 @@ public class ProcessSimulator {
                 System.out.println("Canceled order " + orderId + " (Instance time: " + orderTimeDiff + " s)");
                 return;
             }
-            processSimulator.updateOrder(orderId, OrderState.PAYED);
+            processSimulator.updateOrder(orderId, OrderState.PAID);
             ProcessSimulator.waitSecondsUpTo(200);
             processSimulator.updateOrder(orderId, OrderState.FINISHED);
             long orderTimeDiff = (System.currentTimeMillis() - orderStartTime) / 1000;
@@ -221,6 +221,47 @@ public class ProcessSimulator {
     public void reset() throws SQLException {
         this.dropTables();
         this.createTables();
+    }
+
+    public void printUsers() throws SQLException {
+        System.out.println("\nPRINT USERS TABLE");
+        System.out.println("'ID (PK)' 'NAME'");
+
+        Statement stmt = this.con.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT * FROM USERS");
+        while (rs.next()) {
+            String id = rs.getString("id");
+            String name = rs.getString("name");
+            System.out.println(id + "   " + name);
+        }
+    }
+
+    public void printOrders() throws SQLException {
+        System.out.println("\nPRINT ORDERS TABLE");
+        System.out.println("'ID (PK)' 'USER_ID (FK)' 'STATE'");
+
+        Statement stmt = this.con.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT * FROM ORDERS");
+        while (rs.next()) {
+            String id = rs.getString("id");
+            String userId = rs.getString("user_id");
+            String state = rs.getString("state");
+            System.out.println(id + "   " + userId + "   " + state);
+        }
+    }
+
+    public void printInvoices() throws SQLException {
+        System.out.println("\nPRINT INVOICES TABLE");
+        System.out.println("'ID (PK)' 'ORDER_ID (FK)' 'STATE'");
+
+        Statement stmt = this.con.createStatement();
+        ResultSet rs = stmt.executeQuery("SELECT * FROM INVOICES");
+        while (rs.next()) {
+            String id = rs.getString("id");
+            String orderId = rs.getString("order_id");
+            String state = rs.getString("state");
+            System.out.println(id + "   " + orderId + "   " + state);
+        }
     }
 
     public static void main(String[] args) {
