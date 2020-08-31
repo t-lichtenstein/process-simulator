@@ -1,7 +1,7 @@
 import java.sql.*;
 import java.util.concurrent.ThreadLocalRandom;
 
-// state: created --> checked --> confirmed --> paid --> sent --> finished
+// state: created --> checked --> confirmed --> paid --> finished
 enum OrderState {
     CREATED,
     CHECKING,
@@ -164,7 +164,7 @@ public class ProcessSimulator {
     public static void simulateProcess(ProcessSimulator processSimulator, int id) throws SQLException {
         long startTime = System.currentTimeMillis();
         // Create 0 to 9 orders
-        int numberOfOrders = ThreadLocalRandom.current().nextInt(0, 10); // So that users exist that never created an order
+        int numberOfOrders = ThreadLocalRandom.current().nextInt(0, 10); // So that users exist that never create an order
         for(int i = 0; i < numberOfOrders; i++) {
             int orderId = 10 * id + i;
             ProcessSimulator.waitSecondsUpTo(300);
@@ -174,7 +174,7 @@ public class ProcessSimulator {
             processSimulator.updateOrder(orderId, OrderState.CHECKING);
             ProcessSimulator.waitSecondsUpTo(120);
             if (ProcessSimulator.decide(0.2)) {
-                // order declined
+                // Order declined
                 processSimulator.deleteOrder(orderId);
                 long orderTimeDiff = (System.currentTimeMillis() - orderStartTime) / 1000;
                 System.out.println("Declined order " + orderId + " (Instance time: " + orderTimeDiff + " s)");
@@ -185,7 +185,7 @@ public class ProcessSimulator {
             ProcessSimulator.waitSecondsUpTo(60);
             processSimulator.updateInvoice(orderId);
             if (ProcessSimulator.decide(0.3)) {
-                // order canceled
+                // Order canceled
                 processSimulator.deleteInvoice(orderId);
                 processSimulator.deleteOrder(orderId);
                 long orderTimeDiff = (System.currentTimeMillis() - orderStartTime) / 1000;
@@ -202,83 +202,34 @@ public class ProcessSimulator {
         System.out.println("Finished thread " + id + " in " + timeDiff + " s");
     }
 
-    /*
-    public void printRedoLog() throws SQLException {
-        Statement stmt = this.con.createStatement();
-        stmt.executeQuery("EXECUTE DBMS_LOGMNR.ADD_LOGFILE( -\n" +
-                "   LOGFILENAME => '/u01/app/oracle/fast_recovery_area/ORCLCDB/archivelog/2020_05_27/o1_mf_1_27_hdwqfm2l_.arc', -\n" +
-                "   OPTIONS => DBMS_LOGMNR.NEW)");
-        stmt.executeQuery("EXECUTE DBMS_LOGMNR.START_LOGMNR(OPTIONS => -\n" +
-                "   DBMS_LOGMNR.DICT_FROM_ONLINE_CATALOG)");
-
-        ResultSet rs = stmt.executeQuery("select sql_redo, timestamp from v$logmnr_contents where table_name='TEST'");
-
-        while(rs.next())
-            System.out.println(rs.getString(1) + " " + rs.getString(2));
-    }
-     */
-
     public void reset() throws SQLException {
         this.dropTables();
         this.createTables();
     }
 
-    public void printUsers() throws SQLException {
-        System.out.println("\nPRINT USERS TABLE");
-        System.out.println("'ID (PK)' 'NAME'");
-
-        Statement stmt = this.con.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT * FROM USERS");
-        while (rs.next()) {
-            String id = rs.getString("id");
-            String name = rs.getString("name");
-            System.out.println(id + "   " + name);
-        }
-    }
-
-    public void printOrders() throws SQLException {
-        System.out.println("\nPRINT ORDERS TABLE");
-        System.out.println("'ID (PK)' 'USER_ID (FK)' 'STATE'");
-
-        Statement stmt = this.con.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT * FROM ORDERS");
-        while (rs.next()) {
-            String id = rs.getString("id");
-            String userId = rs.getString("user_id");
-            String state = rs.getString("state");
-            System.out.println(id + "   " + userId + "   " + state);
-        }
-    }
-
-    public void printInvoices() throws SQLException {
-        System.out.println("\nPRINT INVOICES TABLE");
-        System.out.println("'ID (PK)' 'ORDER_ID (FK)' 'STATE'");
-
-        Statement stmt = this.con.createStatement();
-        ResultSet rs = stmt.executeQuery("SELECT * FROM INVOICES");
-        while (rs.next()) {
-            String id = rs.getString("id");
-            String orderId = rs.getString("order_id");
-            String state = rs.getString("state");
-            System.out.println(id + "   " + orderId + "   " + state);
-        }
-    }
-
     public static void main(String[] args) {
+
+        String dbIp = "xxx.xxx.xxx.xxx";
+        String dbPort = "1234";
+        String dbUser = "system";
+        String dbPassword = "oracle";
+
         try{
             Class.forName("oracle.jdbc.driver.OracleDriver");
             System.out.println("Connect to database");
             Connection con= DriverManager.getConnection(
-                    "jdbc:oracle:thin:@192.168.56.101:1521/orcl","system","oracle");
+                    "jdbc:oracle:thin:@" + dbIp + ":" + dbPort + "/orcl",dbUser,dbPassword);
             System.out.println("Connected");
             final ProcessSimulator processSimulator = new ProcessSimulator(con);
             processSimulator.reset();
 
             String[] names = new String[] {"Liam", "Emma", "Noah", "Olivia", "William", "Ava", "James", "Isabella", "Oliver"};
 
-            int simulatedUsers = 100;
+            int simulatedUsers = 49; // Due to db restrictions about number of open connections
             Thread[] threads = new Thread[simulatedUsers];
             long startTime = System.currentTimeMillis();
+
+            // Start independent thread for each user
             for (int userId = 0; userId < simulatedUsers; userId++) {
                 processSimulator.addUser(userId, names[userId % names.length]);
                 final int id = userId;
