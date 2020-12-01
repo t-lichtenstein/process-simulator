@@ -1,14 +1,12 @@
-import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Simulation extends Thread {
 
     ProcessSimulator.SubjectMeta subjectMeta;
-    Connection con;
 
-    public Simulation(Connection con, ProcessSimulator.SubjectMeta meta) {
+    public Simulation(ProcessSimulator.SubjectMeta meta) {
         this.subjectMeta = meta;
-        this.con = con;
     }
 
     public static void waitSecondsUpTo(int seconds) {
@@ -29,7 +27,40 @@ public class Simulation extends Thread {
         try {
             System.out.println("Start Thread " + currentThread().getId());
             waitSecondsUpTo(60);
-            subjectMeta.subject.create(this.con);
+            subjectMeta.subject.create();
+            subjectMeta.admissions.values().forEach(admissionMeta -> {
+                try {
+                    waitSecondsUpTo(20);
+                    admissionMeta.admission.create();
+                    waitSecondsUpTo(40);
+                    admissionMeta.diagnoses.stream().forEach(diagnosis -> {
+                        try {
+                            waitSecondsUpTo(10);
+                            diagnosis.create();
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    });
+                    waitSecondsUpTo(20);
+                    admissionMeta.pharmacies.values().forEach(pharmacyMeta -> {
+                        try {
+                            pharmacyMeta.pharmacy.create();
+                            pharmacyMeta.drugs.stream().forEach(drug -> {
+                                waitSecondsUpTo(10);
+                                try {
+                                    drug.create();
+                                } catch (SQLException e) {
+                                    e.printStackTrace();
+                                }
+                            });
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    });
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            });
             System.out.println("End Thread " + currentThread().getId());
         } catch (Exception e) {
             e.printStackTrace();

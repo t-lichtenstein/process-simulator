@@ -1,3 +1,4 @@
+import database.OracleConnector;
 import enums.Gender;
 import models.*;
 
@@ -171,24 +172,13 @@ public class ProcessSimulator {
 
     public static void main(String[] args) {
 
-        String dbIp = "192.168.56.101";
-        String dbPort = "1521";
-        String dbUser = "system";
-        String dbPassword = "oracle";
-
-
         try{
-            Class.forName("oracle.jdbc.driver.OracleDriver");
-            System.out.println("Connect to database");
-            Connection con = DriverManager.getConnection(
-                    "jdbc:oracle:thin:@" + dbIp + ":" + dbPort + "/orcl",dbUser,dbPassword);
-            System.out.println("Connected");
-            ProcessSimulator.reset(con);
+            ProcessSimulator.reset(OracleConnector.getConnection());
 
             // subject_id
             Map<Integer, SubjectMeta> subjects = new HashMap();
 
-            BufferedReader csvReader = new BufferedReader(new FileReader("/home/.../Desktop/patient_data.csv"));
+            BufferedReader csvReader = new BufferedReader(new FileReader("/home/tom/Desktop/patient_data.csv"));
             String row;
             csvReader.readLine();
             while ((row = csvReader.readLine()) != null) {
@@ -224,7 +214,7 @@ public class ProcessSimulator {
             Long startTime = System.currentTimeMillis();
 
             subjects.values().forEach(subjectMeta -> {
-                Simulation simulation = new Simulation(con, subjectMeta);
+                Simulation simulation = new Simulation(subjectMeta);
                 simulations.add(simulation);
                 simulation.start();
             });
@@ -236,7 +226,6 @@ public class ProcessSimulator {
                     e.printStackTrace();
                 }
             });
-            con.close();
 
             System.out.println("Finished simulation in " + ((System.currentTimeMillis() - startTime) / 1000) + " s");
         } catch(Exception e) {

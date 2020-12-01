@@ -1,5 +1,7 @@
 package models;
 
+import database.OracleConnector;
+
 import java.sql.*;
 
 public class Pharmacy extends Model {
@@ -21,11 +23,12 @@ public class Pharmacy extends Model {
     }
 
     @Override
-    public void create(Connection con) throws SQLException {
-        String SQL = "INSERT INTO pharmacy(id, admission_id, frequency) VALUES(?, ?, ?)";
-        PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
-        Pharmacy.indexLock.lock();
+    public void create() throws SQLException {
+        Connection con = OracleConnector.getConnection();
+        Drug.indexLock.lock();
         try {
+            String SQL = "INSERT INTO pharmacy(id, admission_id, frequency) VALUES(?, ?, ?)";
+            PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
             this.id = getIndex();
             pstmt.setInt(1, this.id);
             pstmt.setInt(2, this.admission.id);
@@ -37,13 +40,15 @@ public class Pharmacy extends Model {
                 System.out.println("An error occurred creating pharmacy " + id);
             }
         } finally {
+            con.close();
             Pharmacy.indexLock.unlock();
         }
     }
 
     @Override
-    public void delete(Connection con) throws SQLException {
+    public void delete() throws SQLException {
         String SQL = "DELETE FROM pharmacy WHERE id = ?";
+        Connection con = OracleConnector.getConnection();
         PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
         pstmt.setInt(1, this.id);
         int affectedRows = pstmt.executeUpdate();
@@ -52,11 +57,13 @@ public class Pharmacy extends Model {
         } else {
             System.out.println("An error occurred deleting pharmacy " + id);
         }
+        con.close();
     }
 
     @Override
-    public void update(Connection con) throws SQLException {
+    public void update() throws SQLException {
         String SQL = "UPDATE pharmacy SET frequency = ? WHERE id = ?";
+        Connection con = OracleConnector.getConnection();
         PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
         pstmt.setString(1, this.frequency);
         pstmt.setInt(2, id);
@@ -66,6 +73,7 @@ public class Pharmacy extends Model {
         } else {
             System.out.println("An error occurred updating pharmacy " + id);
         }
+        con.close();
     }
 
     public static void createTable(Connection con) throws SQLException {

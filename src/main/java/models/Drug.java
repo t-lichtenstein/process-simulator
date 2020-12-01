@@ -1,5 +1,7 @@
 package models;
 
+import database.OracleConnector;
+
 import java.sql.*;
 
 public class Drug extends Model {
@@ -29,11 +31,12 @@ public class Drug extends Model {
     }
 
     @Override
-    public void create(Connection con) throws SQLException {
-        String SQL = "INSERT INTO drugs(id, pharmacy_id, name, dose_amount, dose_unit) VALUES(?, ?, ?, ?, ?)";
-        PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
+    public void create() throws SQLException {
+        Connection con = OracleConnector.getConnection();
         Drug.indexLock.lock();
         try {
+            String SQL = "INSERT INTO drugs(id, pharmacy_id, name, dose_amount, dose_unit) VALUES(?, ?, ?, ?, ?)";
+            PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
             this.id = getIndex();
             pstmt.setInt(1, this.id);
             pstmt.setInt(2, this.pharmacy.id);
@@ -47,16 +50,19 @@ public class Drug extends Model {
                 System.out.println("An error occurred creating pharmacy " + id);
             }
         } finally {
+            con.close();
             Drug.indexLock.unlock();
         }
     }
 
     @Override
-    public void delete(Connection con) throws SQLException {
+    public void delete() throws SQLException {
         String SQL = "DELETE FROM drugs WHERE id = ?";
+        Connection con = OracleConnector.getConnection();
         PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
         pstmt.setInt(1, this.id);
         int affectedRows = pstmt.executeUpdate();
+        con.close();
         if (affectedRows > 0) {
             System.out.println("Deleted pharmacy " + id + " for pharmacy " + pharmacy.id);
         } else {
@@ -65,12 +71,14 @@ public class Drug extends Model {
     }
 
     @Override
-    public void update(Connection con) throws SQLException {
+    public void update() throws SQLException {
         String SQL = "UPDATE drugs SET dose_amount = ? WHERE id = ?";
+        Connection con = OracleConnector.getConnection();
         PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
         pstmt.setString(1, this.dose_amount);
         pstmt.setInt(2, id);
         int affectedRows = pstmt.executeUpdate();
+        con.close();
         if (affectedRows > 0) {
             System.out.println("Updated pharmacy " + id);
         } else {

@@ -1,5 +1,7 @@
 package models;
 
+import database.OracleConnector;
+
 import java.sql.*;
 
 public class Diagnosis extends Model {
@@ -21,11 +23,12 @@ public class Diagnosis extends Model {
     }
 
     @Override
-    public void create(Connection con) throws SQLException {
-        String SQL = "INSERT INTO diagnoses(id, admission_id, icd_code) VALUES(?, ?, ?)";
-        PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
-        Diagnosis.indexLock.lock();
+    public void create() throws SQLException {
+        Connection con = OracleConnector.getConnection();
+        Drug.indexLock.lock();
         try {
+            String SQL = "INSERT INTO diagnoses(id, admission_id, icd_code) VALUES(?, ?, ?)";
+            PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
             this.id = getIndex();
             pstmt.setInt(1, this.id);
             pstmt.setInt(2, this.admission.id);
@@ -37,13 +40,15 @@ public class Diagnosis extends Model {
                 System.out.println("An error occurred creating diagnosis " + id);
             }
         } finally {
+            con.close();
             Diagnosis.indexLock.unlock();
         }
     }
 
     @Override
-    public void delete(Connection con) throws SQLException {
+    public void delete() throws SQLException {
         String SQL = "DELETE FROM diagnoses WHERE id = ?";
+        Connection con = OracleConnector.getConnection();
         PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
         pstmt.setInt(1, this.id);
         int affectedRows = pstmt.executeUpdate();
@@ -52,10 +57,11 @@ public class Diagnosis extends Model {
         } else {
             System.out.println("An error occurred deleting diagnosis " + id);
         }
+        con.close();
     }
 
     @Override
-    public void update(Connection con) throws SQLException {
+    public void update() throws SQLException {
         System.out.println("Cannot update diagnosis");
         throw new SQLException();
     }

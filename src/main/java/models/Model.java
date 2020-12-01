@@ -9,10 +9,10 @@ public abstract class Model {
 
     static Lock indexLock = new ReentrantLock();
 
-    public abstract void create(Connection con) throws SQLException;
+    public abstract void create() throws SQLException;
 
-    public abstract void delete(Connection con) throws SQLException;
+    public abstract void delete() throws SQLException;
 
-    public abstract void update(Connection con) throws SQLException;
+    public abstract void update() throws SQLException;
 
 }

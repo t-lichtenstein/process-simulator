@@ -1,5 +1,6 @@
 package models;
 
+import database.OracleConnector;
 import enums.Gender;
 
 import java.sql.*;
@@ -21,11 +22,12 @@ public class Subject extends Model {
     }
 
     @Override
-    public void create(Connection con) throws SQLException {
-        String SQL = "INSERT INTO subjects(id, gender) VALUES(?, ?)";
-        PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
-        Subject.indexLock.lock();
+    public void create() throws SQLException {
+        Connection con = OracleConnector.getConnection();
+        Drug.indexLock.lock();
         try {
+            String SQL = "INSERT INTO subjects(id, gender) VALUES(?, ?)";
+            PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
             this.id = Subject.getIndex();
             pstmt.setInt(1, this.id);
             pstmt.setString(2, this.gender == Gender.F ? "F" : "M");
@@ -36,13 +38,15 @@ public class Subject extends Model {
                 System.out.println("An error occurred creating subject " + id);
             }
         } finally {
+            con.close();
             Subject.indexLock.unlock();
         }
     }
 
     @Override
-    public void delete(Connection con) throws SQLException {
+    public void delete() throws SQLException {
         String SQL = "DELETE FROM subjects WHERE id = ?";
+        Connection con = OracleConnector.getConnection();
         PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
         pstmt.setInt(1, this.id);
         int affectedRows = pstmt.executeUpdate();
@@ -51,11 +55,13 @@ public class Subject extends Model {
         } else {
             System.out.println("An error occurred deleting subject " + id);
         }
+        con.close();
     }
 
     @Override
-    public void update(Connection con) throws SQLException {
+    public void update() throws SQLException {
         String SQL = "UPDATE subjects SET gender = ? WHERE id = ?";
+        Connection con = OracleConnector.getConnection();
         PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
         pstmt.setString(1, this.gender == Gender.F ? "F" : "M");
         pstmt.setInt(2, id);
@@ -65,6 +71,7 @@ public class Subject extends Model {
         } else {
             System.out.println("An error occurred updating subject " + id);
         }
+        con.close();
     }
 
     public static void createTable(Connection con) throws SQLException {

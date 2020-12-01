@@ -1,5 +1,7 @@
 package models;
 
+import database.OracleConnector;
+
 import java.sql.*;
 
 public class Admission extends Model {
@@ -19,11 +21,12 @@ public class Admission extends Model {
     }
 
     @Override
-    public void create(Connection con) throws SQLException {
-        String SQL = "INSERT INTO admissions(id, subject_id) VALUES(?, ?)";
-        PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
-        Admission.indexLock.lock();
+    public void create() throws SQLException {
+        Connection con = OracleConnector.getConnection();
+        Drug.indexLock.lock();
         try {
+            String SQL = "INSERT INTO admissions(id, subject_id) VALUES(?, ?)";
+            PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
             this.id = getIndex();
             pstmt.setInt(1, this.id);
             pstmt.setInt(2, this.subject.id);
@@ -34,16 +37,19 @@ public class Admission extends Model {
                 System.out.println("An error occurred creating admission " + id);
             }
         } finally {
+            con.close();
             Admission.indexLock.unlock();
         }
     }
 
     @Override
-    public void delete(Connection con) throws SQLException {
+    public void delete() throws SQLException {
         String SQL = "DELETE FROM admissions WHERE id = ?";
+        Connection con = OracleConnector.getConnection();
         PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
         pstmt.setInt(1, this.id);
         int affectedRows = pstmt.executeUpdate();
+        con.close();
         if (affectedRows > 0) {
             System.out.println("Deleted admission " + id);
         } else {
@@ -52,7 +58,7 @@ public class Admission extends Model {
     }
 
     @Override
-    public void update(Connection con) throws SQLException {
+    public void update() throws SQLException {
         System.out.println("Cannot update admission");
         throw new SQLException();
     }
