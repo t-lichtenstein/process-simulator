@@ -1,14 +1,10 @@
-import java.sql.*;
-import java.util.concurrent.ThreadLocalRandom;
+import enums.Gender;
+import models.*;
 
-// state: created --> checked --> confirmed --> paid --> finished
-enum OrderState {
-    CREATED,
-    CHECKING,
-    CONFIRMED,
-    PAID,
-    FINISHED,
-}
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.sql.*;
+import java.util.*;
 
 public class ProcessSimulator {
 
@@ -18,32 +14,23 @@ public class ProcessSimulator {
         this.con = con;
     }
 
-    public void createTables() throws SQLException {
-        Statement stmt = this.con.createStatement();
-        String createUsersSQL = "CREATE TABLE USERS (id INTEGER NOT NULL, name VARCHAR(20), PRIMARY KEY ( id ))";
-        stmt.executeUpdate(createUsersSQL);
-        System.out.println("Created users table");
-        String createOrdersSQL = "CREATE TABLE ORDERS (id INTEGER NOT NULL, user_id INTEGER NULL, state VARCHAR(10), PRIMARY KEY ( id ), CONSTRAINT fk_users FOREIGN KEY(user_id) REFERENCES USERS(id))";
-        stmt.executeUpdate(createOrdersSQL);
-        System.out.println("Created orders table");
-        String createInvoicesSQL = "CREATE TABLE INVOICES (id INTEGER NOT NULL, order_id INTEGER NULL, state VARCHAR(10), PRIMARY KEY ( id ), CONSTRAINT fk_orders FOREIGN KEY(order_id) REFERENCES ORDERS(id))";
-        stmt.executeUpdate(createInvoicesSQL);
-        System.out.println("Created invoices table");
+    public static void createTables(Connection con) throws SQLException {
+        Subject.createTable(con);
+        Admission.createTable(con);
+        Diagnosis.createTable(con);
+        Pharmacy.createTable(con);
+        Drug.createTable(con);
     }
 
-    public void dropTables() throws SQLException {
-        Statement stmt = this.con.createStatement();
-        String sql = "DROP TABLE INVOICES";
-        stmt.executeUpdate(sql);
-        System.out.println("Dropped invoices table");
-        sql = "DROP TABLE ORDERS";
-        stmt.executeUpdate(sql);
-        System.out.println("Dropped orders table");
-        sql = "DROP TABLE USERS";
-        stmt.executeUpdate(sql);
-        System.out.println("Dropped users table");
+    public static void dropTables(Connection con) throws SQLException {
+        Drug.deleteTable(con);
+        Pharmacy.deleteTable(con);
+        Diagnosis.deleteTable(con);
+        Admission.deleteTable(con);
+        Subject.deleteTable(con);
     }
 
+    /*
     public void updateInvoice(int id) throws SQLException {
         String SQL = "UPDATE INVOICES SET state = 'sent' WHERE id = ?";
         PreparedStatement pstmt = this.con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
@@ -146,111 +133,114 @@ public class ProcessSimulator {
             System.out.println("An error occurred deleting invoice " + id);
         }
     }
+     */
 
-    public static void waitSecondsUpTo(int seconds) {
-        long waitingTime = ThreadLocalRandom.current().nextLong(0, seconds * 1000);
-        try {
-            Thread.sleep(waitingTime);
-        } catch (InterruptedException e) {
-            System.out.println("Thread was interrupted");
+    public static void reset(Connection con) throws SQLException {
+        ProcessSimulator.dropTables(con);
+        ProcessSimulator.createTables(con);
+    }
+
+    static class PharmacyMeta {
+        Pharmacy pharmacy;
+        Set<Drug> drugs = new HashSet<>();
+
+        public PharmacyMeta(Pharmacy pharmacy) {
+            this.pharmacy = pharmacy;
         }
     }
 
-    public static boolean decide(double threshold) {
-        double decision = ThreadLocalRandom.current().nextDouble(0, 1);
-        return decision <= threshold;
-    }
+    static class AdmissionMeta {
+        Admission admission;
+        Set<Diagnosis> diagnoses = new HashSet();
+        Map<Integer, PharmacyMeta> pharmacies = new HashMap();
 
-    public static void simulateProcess(ProcessSimulator processSimulator, int id) throws SQLException {
-        long startTime = System.currentTimeMillis();
-        // Create 0 to 9 orders
-        int numberOfOrders = ThreadLocalRandom.current().nextInt(0, 10); // So that users exist that never create an order
-        for(int i = 0; i < numberOfOrders; i++) {
-            int orderId = 10 * id + i;
-            ProcessSimulator.waitSecondsUpTo(300);
-            long orderStartTime = System.currentTimeMillis();
-            processSimulator.addOrder(orderId, id);
-            ProcessSimulator.waitSecondsUpTo(30);
-            processSimulator.updateOrder(orderId, OrderState.CHECKING);
-            ProcessSimulator.waitSecondsUpTo(120);
-            if (ProcessSimulator.decide(0.2)) {
-                // Order declined
-                processSimulator.deleteOrder(orderId);
-                long orderTimeDiff = (System.currentTimeMillis() - orderStartTime) / 1000;
-                System.out.println("Declined order " + orderId + " (Instance time: " + orderTimeDiff + " s)");
-                return;
-            }
-            processSimulator.updateOrder(orderId, OrderState.CONFIRMED);
-            processSimulator.addInvoice(orderId, orderId);
-            ProcessSimulator.waitSecondsUpTo(60);
-            processSimulator.updateInvoice(orderId);
-            if (ProcessSimulator.decide(0.3)) {
-                // Order canceled
-                processSimulator.deleteInvoice(orderId);
-                processSimulator.deleteOrder(orderId);
-                long orderTimeDiff = (System.currentTimeMillis() - orderStartTime) / 1000;
-                System.out.println("Canceled order " + orderId + " (Instance time: " + orderTimeDiff + " s)");
-                return;
-            }
-            processSimulator.updateOrder(orderId, OrderState.PAID);
-            ProcessSimulator.waitSecondsUpTo(200);
-            processSimulator.updateOrder(orderId, OrderState.FINISHED);
-            long orderTimeDiff = (System.currentTimeMillis() - orderStartTime) / 1000;
-            System.out.println("Finished order " + orderId + " (Instance time: " + orderTimeDiff + " s)");
+        public AdmissionMeta(Admission admission) {
+            this.admission = admission;
         }
-        long timeDiff = (System.currentTimeMillis() - startTime) / 1000;
-        System.out.println("Finished thread " + id + " in " + timeDiff + " s");
     }
 
-    public void reset() throws SQLException {
-        this.dropTables();
-        this.createTables();
+    static class SubjectMeta {
+        Subject subject;
+        Map<Integer, AdmissionMeta> admissions = new HashMap();
+
+        public SubjectMeta(Subject subject) {
+            this.subject = subject;
+        }
     }
+
 
     public static void main(String[] args) {
 
-        String dbIp = "xxx.xxx.xxx.xxx";
-        String dbPort = "1234";
+        String dbIp = "192.168.56.101";
+        String dbPort = "1521";
         String dbUser = "system";
         String dbPassword = "oracle";
+
 
         try{
             Class.forName("oracle.jdbc.driver.OracleDriver");
             System.out.println("Connect to database");
-            Connection con= DriverManager.getConnection(
+            Connection con = DriverManager.getConnection(
                     "jdbc:oracle:thin:@" + dbIp + ":" + dbPort + "/orcl",dbUser,dbPassword);
             System.out.println("Connected");
-            final ProcessSimulator processSimulator = new ProcessSimulator(con);
-            processSimulator.reset();
+            ProcessSimulator.reset(con);
 
-            String[] names = new String[] {"Liam", "Emma", "Noah", "Olivia", "William", "Ava", "James", "Isabella", "Oliver"};
+            // subject_id
+            Map<Integer, SubjectMeta> subjects = new HashMap();
 
-            int simulatedUsers = 49; // Due to db restrictions about number of open connections
-            Thread[] threads = new Thread[simulatedUsers];
-            long startTime = System.currentTimeMillis();
+            BufferedReader csvReader = new BufferedReader(new FileReader("/home/.../Desktop/patient_data.csv"));
+            String row;
+            csvReader.readLine();
+            while ((row = csvReader.readLine()) != null) {
+                String[] data = row.split(",");
+                int subjectId = Integer.parseInt(data[0]);
+                Gender gender = data[1].equals("F") ? Gender.F : Gender.M;
+                int admissionId = Integer.parseInt(data[3]);
+                String icdCode = data[7].replaceAll("\"", "");
+                int pharmacyId = Integer.parseInt(data[9]);
+                String frequency = data[10].replaceAll("\"", "");
+                String drugName = data[12].replaceAll("\"", "");
+                String drugVal = data[13].replaceAll("\"", "");
+                String drugUnit = data[14].replaceAll("\"", "");
 
-            // Start independent thread for each user
-            for (int userId = 0; userId < simulatedUsers; userId++) {
-                processSimulator.addUser(userId, names[userId % names.length]);
-                final int id = userId;
-                threads[userId] = new Thread(() -> {
-                    try {
-                        ProcessSimulator.simulateProcess(processSimulator, id);
-                    } catch (SQLException e) {
-                        e.printStackTrace();
-                    }
-                });
-                threads[userId].start();
+
+                subjects.putIfAbsent(subjectId, new SubjectMeta(new Subject(gender)));
+
+                SubjectMeta subjectMeta = subjects.get(subjectId);
+
+                subjectMeta.admissions.putIfAbsent(admissionId, new AdmissionMeta(new Admission(subjectMeta.subject)));
+
+                AdmissionMeta admissionMeta = subjectMeta.admissions.get(admissionId);
+
+                admissionMeta.diagnoses.add(new Diagnosis(admissionMeta.admission, icdCode));
+                admissionMeta.pharmacies.putIfAbsent(pharmacyId, new PharmacyMeta(new Pharmacy(admissionMeta.admission, frequency)));
+                PharmacyMeta pharmacyMeta = admissionMeta.pharmacies.get(pharmacyId);
+                pharmacyMeta.drugs.add(new Drug(pharmacyMeta.pharmacy, drugName, drugVal, drugUnit));
             }
+            csvReader.close();
 
-            for (int userId = 0; userId < simulatedUsers; userId++) {
-                threads[userId].join();
-            }
+            List<Simulation> simulations = new ArrayList<>();
 
-            long timeDiff = (System.currentTimeMillis() - startTime) / 1000;
-            System.out.println("Finished Simulation in " + timeDiff + "s");
+            Long startTime = System.currentTimeMillis();
 
+            subjects.values().forEach(subjectMeta -> {
+                Simulation simulation = new Simulation(con, subjectMeta);
+                simulations.add(simulation);
+                simulation.start();
+            });
+
+            simulations.forEach(simulation -> {
+                try {
+                    simulation.join();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+            });
             con.close();
-        }catch(Exception e){ System.out.println(e);}
+
+            System.out.println("Finished simulation in " + ((System.currentTimeMillis() - startTime) / 1000) + " s");
+        } catch(Exception e) {
+            e.printStackTrace();
+        }
     }
 }
