@@ -3,6 +3,8 @@ package models;
 import database.OracleConnector;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Pharmacy extends Model {
 
@@ -16,16 +18,22 @@ public class Pharmacy extends Model {
     public int id;
     public String frequency;
     public Admission admission;
+    public List<Prescription> prescriptions;
 
     public Pharmacy(Admission admission, String frequency) {
         this.frequency = frequency;
         this.admission = admission;
+        this.prescriptions = new ArrayList<>();
+    }
+
+    public void addPrescription(Prescription prescription) {
+        this.prescriptions.add(prescription);
     }
 
     @Override
     public void create() throws SQLException {
         Connection con = OracleConnector.getConnection();
-        Drug.indexLock.lock();
+        Prescription.indexLock.lock();
         try {
             String SQL = "INSERT INTO pharmacy(id, admission_id, frequency) VALUES(?, ?, ?)";
             PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);

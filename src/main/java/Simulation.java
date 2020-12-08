@@ -1,12 +1,14 @@
+import models.Patient;
+
 import java.sql.SQLException;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Simulation extends Thread {
 
-    ProcessSimulator.SubjectMeta subjectMeta;
+    Patient patient;
 
-    public Simulation(ProcessSimulator.SubjectMeta meta) {
-        this.subjectMeta = meta;
+    public Simulation(Patient patient) {
+        this.patient = patient;
     }
 
     public static void waitSecondsUpTo(int seconds) {
@@ -27,13 +29,13 @@ public class Simulation extends Thread {
         try {
             System.out.println("Start Thread " + currentThread().getId());
             waitSecondsUpTo(60);
-            subjectMeta.subject.create();
-            subjectMeta.admissions.values().forEach(admissionMeta -> {
+            this.patient.create();
+            this.patient.admissions.forEach(admission -> {
                 try {
                     waitSecondsUpTo(20);
-                    admissionMeta.admission.create();
+                    admission.create();
                     waitSecondsUpTo(40);
-                    admissionMeta.diagnoses.stream().forEach(diagnosis -> {
+                    admission.diagnoses.forEach(diagnosis -> {
                         try {
                             waitSecondsUpTo(10);
                             diagnosis.create();
@@ -42,10 +44,10 @@ public class Simulation extends Thread {
                         }
                     });
                     waitSecondsUpTo(20);
-                    admissionMeta.pharmacies.values().forEach(pharmacyMeta -> {
+                    admission.pharmacies.forEach(pharmacy -> {
                         try {
-                            pharmacyMeta.pharmacy.create();
-                            pharmacyMeta.drugs.stream().forEach(drug -> {
+                            pharmacy.create();
+                            pharmacy.prescriptions.forEach(drug -> {
                                 waitSecondsUpTo(10);
                                 try {
                                     drug.create();

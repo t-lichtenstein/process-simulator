@@ -4,13 +4,13 @@ import database.OracleConnector;
 
 import java.sql.*;
 
-public class Drug extends Model {
+public class Prescription extends Model {
 
     static int globalIndex = 0;
 
     static int getIndex() {
-        Drug.globalIndex = Drug.globalIndex + 1;
-        return Drug.globalIndex;
+        Prescription.globalIndex = Prescription.globalIndex + 1;
+        return Prescription.globalIndex;
     }
 
     public String getName() {
@@ -23,7 +23,7 @@ public class Drug extends Model {
     String dose_unit;
     Pharmacy pharmacy;
 
-    public Drug(Pharmacy pharmacy, String name, String dose_amount, String dose_unit) {
+    public Prescription(Pharmacy pharmacy, String name, String dose_amount, String dose_unit) {
         this.name = name;
         this.dose_amount = dose_amount;
         this.dose_unit = dose_unit;
@@ -33,7 +33,7 @@ public class Drug extends Model {
     @Override
     public void create() throws SQLException {
         Connection con = OracleConnector.getConnection();
-        Drug.indexLock.lock();
+        Prescription.indexLock.lock();
         try {
             String SQL = "INSERT INTO drugs(id, pharmacy_id, name, dose_amount, dose_unit) VALUES(?, ?, ?, ?, ?)";
             PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
@@ -51,7 +51,7 @@ public class Drug extends Model {
             }
         } finally {
             con.close();
-            Drug.indexLock.unlock();
+            Prescription.indexLock.unlock();
         }
     }
 

@@ -25,7 +25,7 @@ public class Diagnosis extends Model {
     @Override
     public void create() throws SQLException {
         Connection con = OracleConnector.getConnection();
-        Drug.indexLock.lock();
+        Prescription.indexLock.lock();
         try {
             String SQL = "INSERT INTO diagnoses(id, admission_id, icd_code) VALUES(?, ?, ?)";
             PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);

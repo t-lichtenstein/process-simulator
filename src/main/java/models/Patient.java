@@ -4,31 +4,39 @@ import database.OracleConnector;
 import enums.Gender;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
-public class Subject extends Model {
+public class Patient extends Model {
 
     static int globalIndex = 0;
 
     static int getIndex() {
-        Subject.globalIndex = Subject.globalIndex + 1;
-        return Subject.globalIndex;
+        Patient.globalIndex = Patient.globalIndex + 1;
+        return Patient.globalIndex;
     }
 
     public int id;
     public Gender gender;
+    public List<Admission> admissions;
 
-    public Subject(Gender gender) {
+    public Patient(Gender gender) {
         this.gender = gender;
+        this.admissions = new ArrayList<>();
+    }
+
+    public void addAdmission(Admission admission) {
+        this.admissions.add(admission);
     }
 
     @Override
     public void create() throws SQLException {
         Connection con = OracleConnector.getConnection();
-        Drug.indexLock.lock();
+        Prescription.indexLock.lock();
         try {
             String SQL = "INSERT INTO subjects(id, gender) VALUES(?, ?)";
             PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
-            this.id = Subject.getIndex();
+            this.id = Patient.getIndex();
             pstmt.setInt(1, this.id);
             pstmt.setString(2, this.gender == Gender.F ? "F" : "M");
             int affectedRows = pstmt.executeUpdate();
@@ -39,7 +47,7 @@ public class Subject extends Model {
             }
         } finally {
             con.close();
-            Subject.indexLock.unlock();
+            Patient.indexLock.unlock();
         }
     }
 

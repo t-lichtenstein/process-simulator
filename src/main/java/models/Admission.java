@@ -3,6 +3,8 @@ package models;
 import database.OracleConnector;
 
 import java.sql.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Admission extends Model {
 
@@ -14,25 +16,37 @@ public class Admission extends Model {
     }
 
     public int id;
-    public Subject subject;
+    public Patient patient;
+    public List<Diagnosis> diagnoses;
+    public List<Pharmacy> pharmacies;
 
-    public Admission(Subject subject) {
-        this.subject = subject;
+    public Admission(Patient patient) {
+        this.patient = patient;
+        this.diagnoses = new ArrayList<>();
+        this.pharmacies = new ArrayList<>();
+    }
+
+    public void addDiagnosis(Diagnosis diagnosis) {
+        this.diagnoses.add(diagnosis);
+    }
+
+    public void addPharmacy(Pharmacy pharmacy) {
+        this.pharmacies.add(pharmacy);
     }
 
     @Override
     public void create() throws SQLException {
         Connection con = OracleConnector.getConnection();
-        Drug.indexLock.lock();
+        Prescription.indexLock.lock();
         try {
             String SQL = "INSERT INTO admissions(id, subject_id) VALUES(?, ?)";
             PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
             this.id = getIndex();
             pstmt.setInt(1, this.id);
-            pstmt.setInt(2, this.subject.id);
+            pstmt.setInt(2, this.patient.id);
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
-                System.out.println("Created admission " + id + " for subject " + subject.id);
+                System.out.println("Created admission " + id + " for subject " + patient.id);
             } else {
                 System.out.println("An error occurred creating admission " + id);
             }
