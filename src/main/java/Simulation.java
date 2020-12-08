@@ -28,27 +28,27 @@ public class Simulation extends Thread {
     public void run() {
         try {
             System.out.println("Start Thread " + currentThread().getId());
-            waitSecondsUpTo(60);
+            waitSecondsUpTo(300);
             this.patient.create();
             this.patient.admissions.forEach(admission -> {
                 try {
-                    waitSecondsUpTo(20);
+                    waitSecondsUpTo(100);
                     admission.create();
-                    waitSecondsUpTo(40);
+                    waitSecondsUpTo(30);
                     admission.diagnoses.forEach(diagnosis -> {
                         try {
-                            waitSecondsUpTo(10);
+                            waitSecondsUpTo(20);
                             diagnosis.create();
                         } catch (SQLException e) {
                             e.printStackTrace();
                         }
                     });
-                    waitSecondsUpTo(20);
+                    waitSecondsUpTo(30);
                     admission.pharmacies.forEach(pharmacy -> {
                         try {
                             pharmacy.create();
                             pharmacy.prescriptions.forEach(drug -> {
-                                waitSecondsUpTo(10);
+                                waitSecondsUpTo(20);
                                 try {
                                     drug.create();
                                 } catch (SQLException e) {
