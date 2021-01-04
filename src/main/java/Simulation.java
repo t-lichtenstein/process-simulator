@@ -55,6 +55,7 @@ public class Simulation extends Thread {
                     activePharmacies.forEach(pharmacy -> {
                         if (Simulation.decide(0.1)) {
                             try {
+                                waitSecondsUpTo(6);
                                 pharmacy.update();
                             } catch (SQLException e) {
                                 e.printStackTrace();
@@ -65,12 +66,14 @@ public class Simulation extends Thread {
                     activePrescriptions.forEach(prescription -> {
                         if (Simulation.decide(0.2)) {
                             try {
+                                waitSecondsUpTo(6);
                                 prescription.update();
                             } catch (SQLException e) {
                                 e.printStackTrace();
                             }
                         } else if (Simulation.decide(0.2)) {
                             try {
+                                waitSecondsUpTo(6);
                                 prescription.delete();
                             } catch (SQLException e) {
                                 e.printStackTrace();
