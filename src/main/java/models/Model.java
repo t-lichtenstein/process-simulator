@@ -13,6 +13,4 @@ public abstract class Model {
 
     public abstract void delete() throws SQLException;
 
-    public abstract void update() throws SQLException;
-
 }

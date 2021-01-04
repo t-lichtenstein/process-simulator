@@ -66,7 +66,6 @@ public class Patient extends Model {
         con.close();
     }
 
-    @Override
     public void update() throws SQLException {
         String SQL = "UPDATE subjects SET gender = ? WHERE id = ?";
         Connection con = OracleConnector.getConnection();

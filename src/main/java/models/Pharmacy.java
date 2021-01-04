@@ -5,6 +5,7 @@ import database.OracleConnector;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 public class Pharmacy extends Model {
 
@@ -68,12 +69,14 @@ public class Pharmacy extends Model {
         con.close();
     }
 
-    @Override
     public void update() throws SQLException {
+        String[] frequencies = new String[] {"DAILY", "WEEKLY", "MONTHLY", "3 TIMES", "10 DAYS", "ONCE"};
+        Random r = new Random();
+        String frequency = frequencies[r.nextInt(frequencies.length - 1)];
         String SQL = "UPDATE pharmacy SET frequency = ? WHERE id = ?";
         Connection con = OracleConnector.getConnection();
         PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
-        pstmt.setString(1, this.frequency);
+        pstmt.setString(1, frequency);
         pstmt.setInt(2, id);
         int affectedRows = pstmt.executeUpdate();
         if (affectedRows > 0) {

@@ -71,12 +71,6 @@ public class Admission extends Model {
         }
     }
 
-    @Override
-    public void update() throws SQLException {
-        System.out.println("Cannot update admission");
-        throw new SQLException();
-    }
-
     public static void createTable(Connection con) throws SQLException {
         Statement stmt = con.createStatement();
         String createTableSQL = "CREATE TABLE admissions (id INTEGER NOT NULL, subject_id INTEGER NULL, PRIMARY KEY ( id ), CONSTRAINT fk_admissions_subjects FOREIGN KEY(subject_id) REFERENCES subjects(id))";

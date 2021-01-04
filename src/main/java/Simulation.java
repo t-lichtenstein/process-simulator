@@ -1,6 +1,10 @@
 import models.Patient;
+import models.Pharmacy;
+import models.Prescription;
 
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Simulation extends Thread {
@@ -26,31 +30,63 @@ public class Simulation extends Thread {
     }
 
     public void run() {
+
+        List<Pharmacy> activePharmacies = new ArrayList<>();
+        List<Prescription> activePrescriptions = new ArrayList<>();
+
         try {
             System.out.println("Start Thread " + currentThread().getId());
-            waitSecondsUpTo(10);
+            waitSecondsUpTo(200);
             this.patient.create();
             this.patient.admissions.forEach(admission -> {
                 try {
-                    waitSecondsUpTo(5);
+                    waitSecondsUpTo(10);
                     admission.create();
-                    waitSecondsUpTo(3);
+                    waitSecondsUpTo(4);
                     admission.diagnoses.forEach(diagnosis -> {
                         try {
-                            waitSecondsUpTo(2);
+                            waitSecondsUpTo(6);
                             diagnosis.create();
                         } catch (SQLException e) {
                             e.printStackTrace();
                         }
                     });
-                    waitSecondsUpTo(3);
+                    waitSecondsUpTo(9);
+                    activePharmacies.forEach(pharmacy -> {
+                        if (Simulation.decide(0.1)) {
+                            try {
+                                pharmacy.update();
+                            } catch (SQLException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                    waitSecondsUpTo(4);
+                    activePrescriptions.forEach(prescription -> {
+                        if (Simulation.decide(0.2)) {
+                            try {
+                                prescription.update();
+                            } catch (SQLException e) {
+                                e.printStackTrace();
+                            }
+                        } else if (Simulation.decide(0.2)) {
+                            try {
+                                prescription.delete();
+                            } catch (SQLException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                    waitSecondsUpTo(10);
                     admission.pharmacies.forEach(pharmacy -> {
                         try {
                             pharmacy.create();
-                            pharmacy.prescriptions.forEach(drug -> {
+                            activePharmacies.add(pharmacy);
+                            pharmacy.prescriptions.forEach(prescription -> {
                                 waitSecondsUpTo(2);
                                 try {
-                                    drug.create();
+                                    prescription.create();
+                                    activePrescriptions.add(prescription);
                                 } catch (SQLException e) {
                                     e.printStackTrace();
                                 }

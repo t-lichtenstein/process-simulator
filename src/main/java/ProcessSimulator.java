@@ -9,7 +9,7 @@ import java.util.*;
 
 public class ProcessSimulator {
 
-    public static final String dataPath = "/.../mimic_data/";
+    public static final String dataPath = "/home/tom/Desktop/mimic_data/";
 
     public static void createTables(Connection con) throws SQLException {
         Patient.createTable(con);

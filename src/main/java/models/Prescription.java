@@ -3,6 +3,7 @@ package models;
 import database.OracleConnector;
 
 import java.sql.*;
+import java.util.Random;
 
 public class Prescription extends Model {
 
@@ -35,7 +36,7 @@ public class Prescription extends Model {
         Connection con = OracleConnector.getConnection();
         Prescription.indexLock.lock();
         try {
-            String SQL = "INSERT INTO drugs(id, pharmacy_id, name, dose_amount, dose_unit) VALUES(?, ?, ?, ?, ?)";
+            String SQL = "INSERT INTO prescriptions(id, pharmacy_id, name, dose_amount, dose_unit) VALUES(?, ?, ?, ?, ?)";
             PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
             this.id = getIndex();
             pstmt.setInt(1, this.id);
@@ -57,7 +58,7 @@ public class Prescription extends Model {
 
     @Override
     public void delete() throws SQLException {
-        String SQL = "DELETE FROM drugs WHERE id = ?";
+        String SQL = "DELETE FROM prescriptions WHERE id = ?";
         Connection con = OracleConnector.getConnection();
         PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
         pstmt.setInt(1, this.id);
@@ -70,12 +71,24 @@ public class Prescription extends Model {
         }
     }
 
-    @Override
     public void update() throws SQLException {
-        String SQL = "UPDATE drugs SET dose_amount = ? WHERE id = ?";
+        String SQL = "UPDATE prescriptions SET dose_amount = ? WHERE id = ?";
         Connection con = OracleConnector.getConnection();
         PreparedStatement pstmt = con.prepareStatement(SQL, Statement.RETURN_GENERATED_KEYS);
-        pstmt.setString(1, this.dose_amount);
+
+        Double amount = null;
+        try {
+         amount = Double.parseDouble(this.dose_amount.replace("\"", ""));
+        } catch (Exception e) {
+
+        }
+        String newAmount = "0";
+        if (amount != null) {
+          Random r = new Random();
+          newAmount = Double.toString((amount * ((r.nextInt(100) + 50) / 100)));
+        }
+
+        pstmt.setString(1, newAmount);
         pstmt.setInt(2, id);
         int affectedRows = pstmt.executeUpdate();
         con.close();
@@ -88,19 +101,19 @@ public class Prescription extends Model {
 
     public static void createTable(Connection con) throws SQLException {
         Statement stmt = con.createStatement();
-        String createTableSQL = "CREATE TABLE drugs (id INTEGER NOT NULL, pharmacy_id INTEGER NULL, name VARCHAR(255), dose_amount VARCHAR(32), dose_unit VARCHAR(32), PRIMARY KEY ( id ), CONSTRAINT fk_drugs_pharmacy FOREIGN KEY(pharmacy_id) REFERENCES pharmacy(id))";
+        String createTableSQL = "CREATE TABLE prescriptions (id INTEGER NOT NULL, pharmacy_id INTEGER NULL, name VARCHAR(255), dose_amount VARCHAR(32), dose_unit VARCHAR(32), PRIMARY KEY ( id ), CONSTRAINT fk_prescriptions_pharmacy FOREIGN KEY(pharmacy_id) REFERENCES pharmacy(id))";
         stmt.executeUpdate(createTableSQL);
-        System.out.println("Created Drugs table");
+        System.out.println("Created Prescriptions table");
     }
 
     public static void deleteTable(Connection con) throws SQLException {
         Statement stmt = con.createStatement();
-        String deleteTableSQL = "DROP TABLE drugs PURGE";
+        String deleteTableSQL = "DROP TABLE prescriptions PURGE";
         try {
             stmt.executeUpdate(deleteTableSQL);
-            System.out.println("Dropped Drugs table");
+            System.out.println("Dropped Prescriptions table");
         } catch (SQLSyntaxErrorException e) {
-            System.out.println("Could not delete Drugs");
+            System.out.println("Could not delete Prescriptions");
         }
     }
 }

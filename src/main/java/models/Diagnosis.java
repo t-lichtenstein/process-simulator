@@ -60,12 +60,6 @@ public class Diagnosis extends Model {
         con.close();
     }
 
-    @Override
-    public void update() throws SQLException {
-        System.out.println("Cannot update diagnosis");
-        throw new SQLException();
-    }
-
     public static void createTable(Connection con) throws SQLException {
         Statement stmt = con.createStatement();
         String createTableSQL = "CREATE TABLE diagnoses (id INTEGER NOT NULL, admission_id INTEGER NULL, icd_code VARCHAR(64), PRIMARY KEY ( id ), CONSTRAINT fk_diagnoses_admissions FOREIGN KEY(admission_id) REFERENCES admissions(id))";
