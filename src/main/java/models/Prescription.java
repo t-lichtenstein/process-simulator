@@ -45,9 +45,9 @@ public class Prescription extends Model {
             pstmt.setString(5, this.dose_unit);
             int affectedRows = pstmt.executeUpdate();
             if (affectedRows > 0) {
-                System.out.println("Created pharmacy " + id);
+                System.out.println("Created prescription " + id + " for pharmacy " + this.pharmacy.id);
             } else {
-                System.out.println("An error occurred creating pharmacy " + id);
+                System.out.println("An error occurred creating prescription " + id);
             }
         } finally {
             con.close();
@@ -64,9 +64,9 @@ public class Prescription extends Model {
         int affectedRows = pstmt.executeUpdate();
         con.close();
         if (affectedRows > 0) {
-            System.out.println("Deleted pharmacy " + id + " for pharmacy " + pharmacy.id);
+            System.out.println("Deleted prescription " + id + " for pharmacy " + pharmacy.id);
         } else {
-            System.out.println("An error occurred deleting pharmacy " + id);
+            System.out.println("An error occurred deleting prescription " + id);
         }
     }
 
@@ -80,7 +80,7 @@ public class Prescription extends Model {
         int affectedRows = pstmt.executeUpdate();
         con.close();
         if (affectedRows > 0) {
-            System.out.println("Updated pharmacy " + id);
+            System.out.println("Updated prescription " + id);
         } else {
             System.out.println("An error occurred updating pharmacy " + id);
         }

@@ -66,7 +66,7 @@ public class ProcessSimulator {
 
             Patient patient = patients.get(patientId);
             if (patient == null) {
-                throw new Exception("Patient " + patientId + " does not exist");
+                continue;
             }
 
             Admission admission = new Admission(patient);
@@ -88,7 +88,7 @@ public class ProcessSimulator {
 
             Admission admission = admissions.get(admissionId);
             if (admission == null) {
-                throw new Exception("Admission " + admissionId + " does not exist");
+                continue;
             }
 
             Pharmacy pharmacy = new Pharmacy(admission, frequency);
@@ -109,7 +109,7 @@ public class ProcessSimulator {
 
             Admission admission = admissions.get(admissionId);
             if (admission == null) {
-                throw new Exception("Admission " + admissionId + " does not exist");
+                continue;
             }
 
             Diagnosis diagnosis = new Diagnosis(admission, icdCode);
@@ -130,7 +130,7 @@ public class ProcessSimulator {
             String dose_unit = data[3];
             Pharmacy pharmacy = pharmacies.get(pharmacyId);
             if (pharmacy == null) {
-                throw new Exception("Admission " + pharmacyId + " does not exist");
+                continue;
             }
 
             Prescription prescription = new Prescription(pharmacy, name, dose_amount, dose_unit);
